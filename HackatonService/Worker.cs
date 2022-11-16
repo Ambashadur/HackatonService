@@ -34,15 +34,15 @@ namespace HackatonService
                 var pcs = Process.GetProcesses();
                 foreach (var pc in pcs)
                 {
-                    // if (!pc.ProcessName.ToLower().Contains("browser")) continue;
-
+                    if (pc.ProcessName.ToLower() == "idle") continue;
+                    
                     var process = new ProcessEntity
                     {
                         Id = pc.Id,
                         Name = pc.ProcessName,
                         MachineName = pc.MachineName,
-                        StartTime = pc.StartTime,
-                        ExitTime = pc.ExitTime,
+                        // StartTime = pc.StartTime,
+                        // ExitTime = pc.ExitTime,
                         MainWindowTitle = pc.MainWindowTitle,
                         TotalProcessorTime = pc.TotalProcessorTime
                     };
