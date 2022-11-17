@@ -41,7 +41,7 @@ namespace HackatonService
                         Id = pc.Id,
                         Name = pc.ProcessName,
                         MachineName = pc.MachineName,
-                        // StartTime = pc.StartTime,
+                        StartTime = pc.StartTime,
                         // ExitTime = pc.ExitTime,
                         MainWindowTitle = pc.MainWindowTitle,
                         TotalProcessorTime = pc.TotalProcessorTime
