@@ -1,5 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
-
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <UserSecretsId>dotnet-HackatonService-52D8E3F2-1E1F-4248-8F8B-EDC19FCE5650</UserSecretsId>
@@ -15,12 +14,13 @@
     </PropertyGroup>
     
     <ItemGroup>
+        <PackageReference Include="dnYara" Version="2.1.0" />
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.1" />
         <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.1" />
-        <PackageReference Include="squirrel.windows" Version="2.0.1" />
     </ItemGroup>
 
     <ItemGroup>
       <Folder Include="Data" />
+      <Folder Include="yara-rules\" />
     </ItemGroup>
 </Project>
