@@ -7,5 +7,7 @@
         public string Rule { get; set; }
 
         public string RuleKey { get; set; }
+
+        public string MacAddress { get; set; }
     }
 }

@@ -6,9 +6,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using dnYara;
 using HackatonService.Domain;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System;
+using System.Net.NetworkInformation;
 
 namespace HackatonService
 {
@@ -16,26 +20,32 @@ namespace HackatonService
     {
         private readonly ILogger<Worker> _logger;
         private readonly JsonSerializerOptions _jsonOptions;
-        private readonly string _pathToFile;
+        private string _macAddress;
 
         private string[] _samples = new[]
         {
             @"C:\Users\Home\Documents\hakaton\MalwareDirectory" 
         };
 
-        public Worker(ILogger<Worker> logger, IConfiguration configuration)
+        public Worker(ILogger<Worker> logger)
         {
             _logger = logger;
-            _pathToFile = configuration["File"];
             _jsonOptions = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             };
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
+            _macAddress = NetworkInterface
+                    .GetAllNetworkInterfaces()
+                    .Where(nic => nic.OperationalStatus == OperationalStatus.Up && nic.NetworkInterfaceType != NetworkInterfaceType.Loopback)
+                    .Select(nic => nic.GetPhysicalAddress().ToString())
+                    .FirstOrDefault();
+
+            _logger.LogInformation($"Mac address: {_macAddress}");
+
             while (!stoppingToken.IsCancellationRequested)
             {
                 _logger.LogInformation("Start scanning...");
@@ -89,21 +99,22 @@ namespace HackatonService
             }
         }
 
-        private void WriteToFile<T>(T entity, FileMode mode = FileMode.OpenOrCreate) where T : class
+        private async void SentTCP<T>(T entity) where T : class
         {
-            if (!File.Exists(_pathToFile))
+            using var client = new TcpClient();
+            try
             {
-                File.Create(_pathToFile);
-            }
-            
-            var streamOptions = new FileStreamOptions
-            {
-                Mode = mode,
-                Access = FileAccess.Write
-            };
+                await client.ConnectAsync(IPAddress.Parse("192.168.0.103"), 8888);
+                var stream = client.GetStream();
+                var stringEntity = JsonSerializer.Serialize(entity, _jsonOptions);
+                await stream.WriteAsync(Encoding.Default.GetBytes(stringEntity));
 
-            using var streamWriter = new StreamWriter(_pathToFile, streamOptions);
-            streamWriter.Write(JsonSerializer.Serialize(entity, _jsonOptions));
+                client.Close();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex.Message, ex);
+            }
         }
 
         private void ScanFile(Scanner scanner, string filename, CompiledRules rules)
@@ -122,11 +133,12 @@ namespace HackatonService
                         PathToFile = filename,
                         Rule = id,
                         RuleKey = match.Key,
+                        MacAddress = _macAddress,
                     });
                 }
             }
 
-            WriteToFile(yaraMatches, FileMode.Append);
+            SentTCP(yaraMatches);
             _logger.LogInformation($"Find {scanResults.Count()} results");
         }
     }
